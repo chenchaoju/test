@@ -18,6 +18,15 @@ body {
   color: #e5e7eb;
 }
 
+/* 隐藏滚动条 */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* 自定义滚动条 */
 ::-webkit-scrollbar {
   width: 6px;
@@ -83,6 +92,13 @@ body {
   pointer-events: none;
   z-index: 9999;
   animation: scan-line 4s linear infinite;
+}
+
+/* 安全区域 */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
 /* 输入框样式 */

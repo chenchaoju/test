@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useVaultStore } from '@/store/vaultStore';
 import Logo from './Logo';
-import { Lock, Vault, KeyRound, Settings, Folder } from 'lucide-react';
+import { Lock, Vault, KeyRound, Settings, Folder, LogOut } from 'lucide-react';
 
 const navItems = [
   { path: '/vault', label: '密码库', icon: Vault },
@@ -13,7 +13,9 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const entries = useVaultStore(s => s.entries);
+  const currentAccount = useVaultStore(s => s.currentAccount);
   const lock = useVaultStore(s => s.lock);
+  const switchAccount = useVaultStore(s => s.switchAccount);
 
   const categories = ['all', ...Array.from(new Set(entries.map(e => e.category).filter(Boolean)))];
 
@@ -22,11 +24,19 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="w-64 h-screen glass border-r border-vault-border flex flex-col">
+    <aside className="hidden lg:flex w-64 h-screen glass border-r border-vault-border flex-col">
       {/* Logo */}
       <div className="p-5 border-b border-vault-border">
         <Logo />
       </div>
+
+      {/* 当前账户 */}
+      {currentAccount && (
+        <div className="px-5 py-2.5 border-b border-vault-border">
+          <div className="text-xs font-mono text-vault-muted uppercase tracking-wider mb-1">当前账户</div>
+          <div className="text-sm text-gray-200 font-medium truncate">{currentAccount}</div>
+        </div>
+      )}
 
       {/* 导航 */}
       <nav className="p-4 flex flex-col gap-1">
@@ -71,13 +81,20 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* 底部锁定按钮 */}
-      <div className="p-4 border-t border-vault-border">
+      {/* 底部操作 */}
+      <div className="p-4 border-t border-vault-border flex flex-col gap-2">
+        <button
+          onClick={switchAccount}
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-gray-400 border border-vault-border hover:border-vault-accent/30 hover:text-vault-accent transition-all"
+        >
+          <LogOut size={15} />
+          切换账户
+        </button>
         <button
           onClick={lock}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium text-vault-danger border border-vault-danger/30 hover:bg-vault-danger/10 transition-all"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-vault-danger border border-vault-danger/30 hover:bg-vault-danger/10 transition-all"
         >
-          <Lock size={16} />
+          <Lock size={15} />
           锁定保险库
         </button>
       </div>

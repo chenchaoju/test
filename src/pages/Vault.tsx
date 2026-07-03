@@ -66,13 +66,13 @@ export default function Vault() {
             />
           </div>
 
-          {/* 分类筛选 */}
-          <div className="hidden md:flex items-center gap-2">
+          {/* 分类筛选 - 桌面端横向按钮，移动端横向滚动 */}
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
             {categories.map(cat => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                className={`flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   selectedCategory === cat
                     ? 'bg-vault-accent/10 text-vault-accent border border-vault-accent/30'
                     : 'text-gray-400 hover:text-white border border-transparent hover:bg-vault-card/50'
@@ -95,15 +95,16 @@ export default function Vault() {
       </header>
 
       {/* 内容区 */}
-      <div className="p-6">
+      <div className="p-4 sm:p-6 pb-24 md:pb-6">
         {entries.length === 0 ? (
           /* 空状态 */
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-vault-accent/10 to-vault-purple/10 border border-vault-border flex items-center justify-center mb-6">
-              <KeyRound size={36} className="text-vault-muted" />
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-vault-accent/10 to-vault-purple/10 border border-vault-border flex items-center justify-center mb-4 sm:mb-6">
+              <KeyRound size={28} className="text-vault-muted sm:hidden" />
+              <KeyRound size={36} className="text-vault-muted hidden sm:block" />
             </div>
-            <h2 className="text-xl font-medium text-gray-200 mb-2">密码库为空</h2>
-            <p className="text-sm text-vault-muted mb-6">添加您的第一个密码，开始安全管理</p>
+            <h2 className="text-lg sm:text-xl font-medium text-gray-200 mb-2">密码库为空</h2>
+            <p className="text-sm text-vault-muted mb-5 sm:mb-6">添加您的第一个密码，开始安全管理</p>
             <button
               onClick={() => { setEditingEntry(null); setShowForm(true); }}
               className="btn-primary flex items-center gap-2"
@@ -114,17 +115,18 @@ export default function Vault() {
           </div>
         ) : filteredEntries.length === 0 ? (
           /* 无搜索结果 */
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-vault-card border border-vault-border flex items-center justify-center mb-4">
-              <ShieldX size={28} className="text-vault-muted" />
+          <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-vault-card border border-vault-border flex items-center justify-center mb-3 sm:mb-4">
+              <ShieldX size={24} className="text-vault-muted sm:hidden" />
+              <ShieldX size={28} className="text-vault-muted hidden sm:block" />
             </div>
-            <h2 className="text-lg font-medium text-gray-200 mb-1">未找到匹配的密码</h2>
+            <h2 className="text-base sm:text-lg font-medium text-gray-200 mb-1">未找到匹配的密码</h2>
             <p className="text-sm text-vault-muted">尝试调整搜索关键词或分类筛选</p>
           </div>
         ) : (
           /* 密码列表 */
           <>
-            <div className="mb-4 text-xs text-vault-muted font-mono">
+            <div className="mb-3 sm:mb-4 text-xs text-vault-muted font-mono">
               共 {filteredEntries.length} 条密码
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">

@@ -1,19 +1,28 @@
 import { create } from 'zustand';
 import type { PasswordEntry, ToastMessage, AppSettings } from '@/lib/types';
 import {
-  isVaultInitialized,
-  setMasterPassword,
-  verifyMasterPassword,
-  saveEncryptedEntries,
-  loadEncryptedEntries,
+  getAccounts,
+  createAccount as cryptoCreateAccount,
+  deleteAccount as cryptoDeleteAccount,
+  verifyAccountPassword,
+  saveAccountEntries,
+  loadAccountEntries,
+  saveAccountSettings,
+  loadAccountSettings,
+  saveSession,
+  loadSession,
+  clearSession,
   clearAllData,
+  exportAccountData,
+  importAccountData,
 } from '@/lib/crypto';
 
 interface VaultStore {
   // 状态
   entries: PasswordEntry[];
   isLocked: boolean;
-  isInitialized: boolean;
+  accounts: string[];
+  currentAccount: string;
   masterPassword: string;
   toasts: ToastMessage[];
   settings: AppSettings;
@@ -21,9 +30,13 @@ interface VaultStore {
   searchQuery: string;
 
   // 操作
-  initVault: (password: string) => boolean;
-  unlock: (password: string) => boolean;
+  initStore: () => void;
+  createAccount: (account: string, password: string) => boolean;
+  login: (account: string, password: string, remember: boolean) => boolean;
+  autoLogin: (account: string) => boolean;
   lock: () => void;
+  switchAccount: () => void;
+  deleteAccount: (account: string) => void;
   addEntry: (entry: Omit<PasswordEntry, 'id' | 'createdAt' | 'updatedAt'>) => void;
   updateEntry: (id: string, entry: Partial<PasswordEntry>) => void;
   deleteEntry: (id: string) => void;
@@ -33,21 +46,8 @@ interface VaultStore {
   removeToast: (id: string) => void;
   updateSettings: (settings: Partial<AppSettings>) => void;
   clearVault: () => void;
-  loadFromStorage: () => void;
-}
-
-const SETTINGS_KEY = 'vault_settings';
-
-function loadSettings(): AppSettings {
-  try {
-    const raw = localStorage.getItem(SETTINGS_KEY);
-    if (raw) return { ...defaultSettings, ...JSON.parse(raw) };
-  } catch { /* noop */ }
-  return defaultSettings;
-}
-
-function saveSettings(settings: AppSettings) {
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  exportData: () => string;
+  importData: (jsonStr: string) => { account: string; success: boolean };
 }
 
 const defaultSettings: AppSettings = {
@@ -55,55 +55,106 @@ const defaultSettings: AppSettings = {
   rememberSession: false,
 };
 
-function persistEntries(entries: PasswordEntry[], masterPassword: string) {
-  saveEncryptedEntries(entries, masterPassword);
+function getSettings(account: string): AppSettings {
+  const saved = loadAccountSettings<AppSettings>(account);
+  return saved ? { ...defaultSettings, ...saved } : defaultSettings;
 }
 
 export const useVaultStore = create<VaultStore>((set, get) => ({
   entries: [],
   isLocked: true,
-  isInitialized: isVaultInitialized(),
+  accounts: [],
+  currentAccount: '',
   masterPassword: '',
   toasts: [],
-  settings: loadSettings(),
+  settings: defaultSettings,
   selectedCategory: 'all',
   searchQuery: '',
 
-  initVault: (password: string) => {
-    setMasterPassword(password);
-    const emptyEntries: PasswordEntry[] = [];
-    persistEntries(emptyEntries, password);
+  initStore: () => {
+    const accounts = getAccounts();
+    set({ accounts });
+  },
+
+  createAccount: (account: string, password: string) => {
+    if (!cryptoCreateAccount(account, password)) return false;
+    const accounts = getAccounts();
+    set({ accounts });
+    return true;
+  },
+
+  login: (account: string, password: string, remember: boolean) => {
+    if (!verifyAccountPassword(account, password)) return false;
+    const entries = loadAccountEntries<PasswordEntry[]>(account, password) || [];
+    const settings = getSettings(account);
+    if (remember) {
+      saveSession(account, password, true);
+    }
     set({
-      isInitialized: true,
       isLocked: false,
+      currentAccount: account,
       masterPassword: password,
-      entries: emptyEntries,
+      entries,
+      settings,
     });
     return true;
   },
 
-  unlock: (password: string) => {
-    if (!verifyMasterPassword(password)) return false;
-    const entries = loadEncryptedEntries<PasswordEntry[]>(password) || [];
+  autoLogin: (account: string) => {
+    const session = loadSession(account);
+    if (!session || session.account !== account) return false;
+    const entries = loadAccountEntries<PasswordEntry[]>(account, session.password) || [];
+    const settings = getSettings(account);
     set({
       isLocked: false,
-      masterPassword: password,
+      currentAccount: account,
+      masterPassword: session.password,
       entries,
+      settings,
     });
     return true;
   },
 
   lock: () => {
+    const { currentAccount } = get();
+    if (currentAccount) {
+      clearSession(currentAccount);
+    }
     set({
       isLocked: true,
       masterPassword: '',
       entries: [],
       selectedCategory: 'all',
       searchQuery: '',
+      settings: defaultSettings,
     });
   },
 
+  switchAccount: () => {
+    const { currentAccount } = get();
+    if (currentAccount) {
+      clearSession(currentAccount);
+    }
+    set({
+      isLocked: true,
+      currentAccount: '',
+      masterPassword: '',
+      entries: [],
+      selectedCategory: 'all',
+      searchQuery: '',
+      settings: defaultSettings,
+    });
+  },
+
+  deleteAccount: (account: string) => {
+    cryptoDeleteAccount(account);
+    const accounts = getAccounts();
+    set({ accounts });
+    get().addToast('success', '账户已删除');
+  },
+
   addEntry: (entry) => {
+    const { currentAccount, masterPassword } = get();
     const now = Date.now();
     const newEntry: PasswordEntry = {
       ...entry,
@@ -112,23 +163,25 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       updatedAt: now,
     };
     const entries = [...get().entries, newEntry];
-    persistEntries(entries, get().masterPassword);
+    saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries });
     get().addToast('success', '密码已添加');
   },
 
   updateEntry: (id, partial) => {
+    const { currentAccount, masterPassword } = get();
     const entries = get().entries.map(e =>
       e.id === id ? { ...e, ...partial, updatedAt: Date.now() } : e
     );
-    persistEntries(entries, get().masterPassword);
+    saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries });
     get().addToast('success', '密码已更新');
   },
 
   deleteEntry: (id) => {
+    const { currentAccount, masterPassword } = get();
     const entries = get().entries.filter(e => e.id !== id);
-    persistEntries(entries, get().masterPassword);
+    saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries });
     get().addToast('success', '密码已删除');
   },
@@ -149,19 +202,20 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   },
 
   updateSettings: (partial) => {
+    const { currentAccount } = get();
     const settings = { ...get().settings, ...partial };
-    saveSettings(settings);
+    saveAccountSettings(currentAccount, settings);
     set({ settings });
     get().addToast('success', '设置已保存');
   },
 
   clearVault: () => {
     clearAllData();
-    localStorage.removeItem(SETTINGS_KEY);
     set({
       entries: [],
       isLocked: true,
-      isInitialized: false,
+      accounts: [],
+      currentAccount: '',
       masterPassword: '',
       selectedCategory: 'all',
       searchQuery: '',
@@ -169,10 +223,12 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     });
   },
 
-  loadFromStorage: () => {
-    set({
-      isInitialized: isVaultInitialized(),
-      isLocked: true,
-    });
+  exportData: () => {
+    const { currentAccount } = get();
+    return exportAccountData(currentAccount);
+  },
+
+  importData: (jsonStr: string) => {
+    return importAccountData(jsonStr);
   },
 }));

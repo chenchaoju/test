@@ -1,26 +1,28 @@
 import { useRef, useState } from 'react';
 import { useVaultStore } from '@/store/vaultStore';
-import { exportEncryptedData, importEncryptedData } from '@/lib/crypto';
 import {
-  Download, Upload, Trash2, Clock, ShieldCheck, AlertTriangle, Check
+  Download, Upload, Trash2, Clock, ShieldCheck, AlertTriangle, Check, UserCircle
 } from 'lucide-react';
 
 export default function Settings() {
   const settings = useVaultStore(s => s.settings);
   const updateSettings = useVaultStore(s => s.updateSettings);
   const clearVault = useVaultStore(s => s.clearVault);
+  const currentAccount = useVaultStore(s => s.currentAccount);
   const entries = useVaultStore(s => s.entries);
   const addToast = useVaultStore(s => s.addToast);
+  const exportData = useVaultStore(s => s.exportData);
+  const importData = useVaultStore(s => s.importData);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [confirmClear, setConfirmClear] = useState(false);
 
   const handleExport = () => {
-    const data = exportEncryptedData('');
+    const data = exportData();
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vault-cipher-backup-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `vault-cipher-backup-${currentAccount}-${new Date().toISOString().split('T')[0]}.json`;
     a.click();
     URL.revokeObjectURL(url);
     addToast('success', '加密数据已导出');
@@ -32,9 +34,10 @@ export default function Settings() {
     const reader = new FileReader();
     reader.onload = (ev) => {
       const text = ev.target?.result as string;
-      if (importEncryptedData(text)) {
-        addToast('success', '数据已导入，请重新输入主密码');
-        clearVault();
+      const result = importData(text);
+      if (result.success) {
+        addToast('success', `数据已导入为 "${result.account}"，请重新输入主密码`);
+        setTimeout(() => clearVault(), 500);
       } else {
         addToast('error', '导入失败：文件格式无效');
       }
@@ -58,7 +61,7 @@ export default function Settings() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vault-export-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `vault-export-${currentAccount}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     addToast('success', 'CSV 已导出（明文，请注意安全）');
@@ -75,14 +78,25 @@ export default function Settings() {
 
   return (
     <div className="flex-1 h-screen overflow-y-auto bg-vault-bg bg-grid">
-      <header className="sticky top-0 glass border-b border-vault-border px-6 py-4 z-20">
-        <h1 className="font-mono text-xl font-bold gradient-text">设置</h1>
-        <p className="text-sm text-vault-muted mt-0.5">管理数据和偏好设置</p>
+      <header className="sticky top-0 glass border-b border-vault-border px-4 sm:px-6 py-3 sm:py-4 z-20">
+        <h1 className="font-mono text-lg sm:text-xl font-bold gradient-text">设置</h1>
+        <p className="text-xs sm:text-sm text-vault-muted mt-0.5">管理数据和偏好设置</p>
       </header>
 
-      <div className="p-6 max-w-2xl mx-auto flex flex-col gap-6">
+      <div className="p-4 sm:p-6 pb-24 md:pb-6 max-w-2xl mx-auto flex flex-col gap-5 sm:gap-6">
+        {/* 当前账户 */}
+        <section className="bg-vault-card/40 border border-vault-border rounded-2xl p-4 sm:p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <UserCircle size={18} className="text-vault-accent" />
+            <h2 className="font-medium text-gray-100">当前账户</h2>
+          </div>
+          <div className="bg-vault-bg/50 rounded-lg p-3 border border-vault-border">
+            <div className="font-mono text-sm text-vault-accent">{currentAccount}</div>
+          </div>
+        </section>
+
         {/* 安全设置 */}
-        <section className="bg-vault-card/40 border border-vault-border rounded-2xl p-5">
+        <section className="bg-vault-card/40 border border-vault-border rounded-2xl p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-4">
             <ShieldCheck size={18} className="text-vault-accent" />
             <h2 className="font-medium text-gray-100">安全设置</h2>
@@ -90,7 +104,7 @@ export default function Settings() {
 
           <div className="flex flex-col gap-4">
             {/* 自动锁定 */}
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
                 <Clock size={16} className="text-vault-muted" />
                 <span className="text-sm text-gray-300">自动锁定时间</span>
@@ -111,7 +125,7 @@ export default function Settings() {
         </section>
 
         {/* 数据管理 */}
-        <section className="bg-vault-card/40 border border-vault-border rounded-2xl p-5">
+        <section className="bg-vault-card/40 border border-vault-border rounded-2xl p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-4">
             <Download size={18} className="text-vault-accent" />
             <h2 className="font-medium text-gray-100">数据管理</h2>
@@ -171,7 +185,7 @@ export default function Settings() {
         </section>
 
         {/* 危险区域 */}
-        <section className="bg-vault-danger/5 border border-vault-danger/20 rounded-2xl p-5">
+        <section className="bg-vault-danger/5 border border-vault-danger/20 rounded-2xl p-4 sm:p-5">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle size={18} className="text-vault-danger" />
             <h2 className="font-medium text-vault-danger">危险区域</h2>
@@ -199,7 +213,7 @@ export default function Settings() {
         </section>
 
         {/* 统计信息 */}
-        <section className="bg-vault-card/30 border border-vault-border rounded-2xl p-5">
+        <section className="bg-vault-card/30 border border-vault-border rounded-2xl p-4 sm:p-5">
           <h2 className="font-mono text-xs text-vault-muted uppercase tracking-wider mb-3">保险库信息</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-vault-bg/50 rounded-lg p-3 border border-vault-border">
@@ -216,8 +230,8 @@ export default function Settings() {
         </section>
 
         {/* 关于 */}
-        <div className="text-center text-xs text-vault-muted font-mono pb-4">
-          VaultCipher v1.0 · AES-256 加密 · 纯前端应用
+        <div className="text-center text-xs text-vault-muted font-mono pb-2 sm:pb-4">
+          VaultCipher v1.0 · AES-256 加密 · 多账户隔离
         </div>
       </div>
     </div>
