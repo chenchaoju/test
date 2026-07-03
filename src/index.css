@@ -1,0 +1,150 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  background-color: #0a0e1a;
+  color: #e5e7eb;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0e1a;
+}
+::-webkit-scrollbar-thumb {
+  background: #2a3142;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f0ff;
+}
+
+/* 网格背景 */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* 霓虹文字 */
+.neon-text {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+.neon-text-purple {
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5), 0 0 20px rgba(168, 85, 247, 0.3);
+}
+
+/* 毛玻璃 */
+.glass {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* 霓虹边框 */
+.neon-border {
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.1), inset 0 0 15px rgba(0, 240, 255, 0.05);
+}
+
+/* 渐变文字 */
+.gradient-text {
+  background: linear-gradient(135deg, #00f0ff 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 扫描线效果 */
+.scan-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.5), transparent);
+  pointer-events: none;
+  z-index: 9999;
+  animation: scan-line 4s linear infinite;
+}
+
+/* 输入框样式 */
+.vault-input {
+  background: rgba(10, 14, 26, 0.8);
+  border: 1px solid #2a3142;
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: #e5e7eb;
+  font-size: 14px;
+  transition: all 0.2s;
+  width: 100%;
+}
+.vault-input:focus {
+  outline: none;
+  border-color: #00f0ff;
+  box-shadow: 0 0 0 3px rgba(0, 240, 255, 0.1);
+}
+.vault-input::placeholder {
+  color: #6b7280;
+}
+
+/* 按钮基础样式 */
+.btn-primary {
+  background: linear-gradient(135deg, #00f0ff 0%, #0099bb 100%);
+  color: #0a0e1a;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+}
+.btn-primary:hover {
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: rgba(26, 31, 46, 0.8);
+  color: #e5e7eb;
+  border: 1px solid #2a3142;
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  border-color: #00f0ff;
+  color: #00f0ff;
+}
+
+.btn-danger {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 10px 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.btn-danger:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: #ef4444;
+}
