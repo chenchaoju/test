@@ -50,18 +50,23 @@ export default function Settings() {
       addToast('info', '没有可导出的数据');
       return;
     }
-    const headers = ['标题', '用户名', '密码', '网址', '分类', '备注'];
-    const rows = entries.map(e =>
-      [e.title, e.username, e.password, e.url || '', e.category, e.notes || '']
+    const headers = ['标题', '类型', '分类', '内容'];
+    const rows = entries.map(e => {
+      let content = '';
+      if (e.type === 'text') content = e.textContent || '';
+      else if (e.type === 'link') content = e.linkContent || '';
+      else if (e.type === 'image') content = '[图片]';
+      else if (e.type === 'mixed') content = e.subItems?.map(i => i.title + ': ' + i.content).join('; ') || '';
+      return [e.title, e.type, e.category, content]
         .map(v => `"${String(v).replace(/"/g, '""')}"`)
-        .join(',')
-    );
+        .join(',');
+    });
     const csv = '\ufeff' + [headers.join(','), ...rows].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `vault-export-${currentAccount}-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `clipboard-export-${currentAccount}-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     URL.revokeObjectURL(url);
     addToast('success', 'CSV 已导出（明文，请注意安全）');

@@ -1,11 +1,26 @@
-// 密码条目类型
-export interface PasswordEntry {
+// 子项类型
+export type SubItemType = 'text' | 'image';
+
+// 子项
+export interface SubItem {
+  id: string;
+  type: SubItemType;
+  title: string;
+  content: string;
+}
+
+// 条目类型
+export type EntryType = 'text' | 'image' | 'link' | 'mixed';
+
+// 复制板条目
+export interface ClipboardEntry {
   id: string;
   title: string;
-  username: string;
-  password: string;
-  url?: string;
-  notes?: string;
+  type: EntryType;
+  textContent?: string;
+  imageContent?: string;
+  linkContent?: string;
+  subItems?: SubItem[];
   category: string;
   createdAt: number;
   updatedAt: number;
@@ -44,3 +59,6 @@ export interface ToastMessage {
   type: 'success' | 'error' | 'info';
   message: string;
 }
+
+// 兼容旧类型名
+export type PasswordEntry = ClipboardEntry;

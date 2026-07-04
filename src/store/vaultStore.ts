@@ -181,7 +181,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries, categories });
-    get().addToast('success', '密码已添加');
+    get().addToast('success', '条目已添加');
   },
 
   updateEntry: (id, partial) => {
@@ -192,7 +192,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries, categories });
-    get().addToast('success', '密码已更新');
+    get().addToast('success', '条目已更新');
   },
 
   deleteEntry: (id) => {
@@ -201,7 +201,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
     set({ entries, categories });
-    get().addToast('success', '密码已删除');
+    get().addToast('success', '条目已删除');
   },
 
   setSelectedCategory: (cat) => set({ selectedCategory: cat }),

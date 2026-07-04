@@ -1,10 +1,10 @@
 import { useState, useMemo } from 'react';
 import { useVaultStore } from '@/store/vaultStore';
-import PasswordCard from '@/components/PasswordCard';
-import PasswordForm from '@/components/PasswordForm';
-import PasswordDetail from '@/components/PasswordDetail';
-import type { PasswordEntry } from '@/lib/types';
-import { Search, Plus, ShieldX, KeyRound } from 'lucide-react';
+import EntryCard from '@/components/EntryCard';
+import EntryForm from '@/components/EntryForm';
+import EntryDetail from '@/components/EntryDetail';
+import type { ClipboardEntry } from '@/lib/types';
+import { Search, Plus, FileX, ClipboardList } from 'lucide-react';
 
 export default function Vault() {
   const entries = useVaultStore(s => s.entries);
@@ -12,12 +12,12 @@ export default function Vault() {
   const setSearchQuery = useVaultStore(s => s.setSearchQuery);
   const selectedCategory = useVaultStore(s => s.selectedCategory);
   const setSelectedCategory = useVaultStore(s => s.setSelectedCategory);
+  const categories = useVaultStore(s => s.categories);
 
   const [showForm, setShowForm] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<PasswordEntry | null>(null);
-  const [detailEntry, setDetailEntry] = useState<PasswordEntry | null>(null);
+  const [editingEntry, setEditingEntry] = useState<ClipboardEntry | null>(null);
+  const [detailEntry, setDetailEntry] = useState<ClipboardEntry | null>(null);
 
-  // 过滤后的条目
   const filteredEntries = useMemo(() => {
     let result = entries;
     if (selectedCategory !== 'all') {
@@ -27,48 +27,45 @@ export default function Vault() {
       const q = searchQuery.toLowerCase();
       result = result.filter(e =>
         e.title.toLowerCase().includes(q) ||
-        e.username.toLowerCase().includes(q) ||
-        e.url?.toLowerCase().includes(q) ||
+        e.textContent?.toLowerCase().includes(q) ||
+        e.linkContent?.toLowerCase().includes(q) ||
         e.category.toLowerCase().includes(q)
       );
     }
     return result.sort((a, b) => b.updatedAt - a.updatedAt);
   }, [entries, searchQuery, selectedCategory]);
 
-  // 分类列表
-  const categories = useVaultStore(s => s.categories);
-
-  const handleEdit = (entry: PasswordEntry) => {
+  const handleEdit = (entry: ClipboardEntry) => {
     setDetailEntry(null);
     setEditingEntry(entry);
     setShowForm(true);
   };
 
   return (
-    <div className="flex-1 h-screen overflow-y-auto bg-vault-bg bg-grid">
+    <div className="flex-1 h-screen overflow-y-auto bg-gray-50">
       {/* 顶部栏 */}
-      <header className="sticky top-0 glass border-b border-vault-border px-6 py-4 z-20">
+      <header className="sticky top-0 bg-white/80 backdrop-blur border-b border-gray-200 px-6 py-4 z-20">
         <div className="flex items-center gap-4">
           {/* 搜索框 */}
           <div className="relative flex-1 max-w-md">
-            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-vault-muted" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="搜索密码..."
-              className="vault-input pl-10"
+              placeholder="搜索复制板..."
+              className="w-full h-10 pl-10 pr-4 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-500 transition-all bg-white"
             />
           </div>
 
-          {/* 分类筛选 - 桌面端横向按钮，移动端横向滚动 */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+          {/* 分类筛选 */}
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
             <button
               onClick={() => setSelectedCategory('all')}
-              className={`flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+              className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                 selectedCategory === 'all'
-                  ? 'bg-vault-accent/10 text-vault-accent border border-vault-accent/30'
-                  : 'text-gray-400 hover:text-white border border-transparent hover:bg-vault-card/50'
+                  ? 'bg-indigo-50 text-indigo-600 border border-indigo-200'
+                  : 'text-gray-500 hover:text-gray-700 border border-transparent hover:bg-gray-100'
               }`}
             >
               全部
@@ -77,10 +74,10 @@ export default function Vault() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                className={`flex-shrink-0 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   selectedCategory === cat
-                    ? 'bg-vault-accent/10 text-vault-accent border border-vault-accent/30'
-                    : 'text-gray-400 hover:text-white border border-transparent hover:bg-vault-card/50'
+                    ? 'bg-indigo-50 text-indigo-600 border border-indigo-200'
+                    : 'text-gray-500 hover:text-gray-700 border border-transparent hover:bg-gray-100'
                 }`}
               >
                 {cat}
@@ -91,10 +88,10 @@ export default function Vault() {
           {/* 新增按钮 */}
           <button
             onClick={() => { setEditingEntry(null); setShowForm(true); }}
-            className="btn-primary flex items-center gap-2 whitespace-nowrap"
+            className="flex items-center gap-2 whitespace-nowrap px-4 py-2 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
           >
             <Plus size={18} />
-            <span className="hidden sm:inline">新增密码</span>
+            <span className="hidden sm:inline">新建复制板</span>
           </button>
         </div>
       </header>
@@ -104,39 +101,39 @@ export default function Vault() {
         {entries.length === 0 ? (
           /* 空状态 */
           <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-vault-accent/10 to-vault-purple/10 border border-vault-border flex items-center justify-center mb-4 sm:mb-6">
-              <KeyRound size={28} className="text-vault-muted sm:hidden" />
-              <KeyRound size={36} className="text-vault-muted hidden sm:block" />
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 border border-indigo-100 flex items-center justify-center mb-4 sm:mb-6">
+              <ClipboardList size={28} className="text-indigo-400 sm:hidden" />
+              <ClipboardList size={36} className="text-indigo-400 hidden sm:block" />
             </div>
-            <h2 className="text-lg sm:text-xl font-medium text-gray-200 mb-2">密码库为空</h2>
-            <p className="text-sm text-vault-muted mb-5 sm:mb-6">添加您的第一个密码，开始安全管理</p>
+            <h2 className="text-lg sm:text-xl font-medium text-gray-700 mb-2">复制板为空</h2>
+            <p className="text-sm text-gray-500 mb-5 sm:mb-6">添加您的第一条内容，开始高效管理</p>
             <button
               onClick={() => { setEditingEntry(null); setShowForm(true); }}
-              className="btn-primary flex items-center gap-2"
+              className="flex items-center gap-2 px-5 py-2.5 bg-indigo-500 text-white text-sm font-medium rounded-lg hover:bg-indigo-600 transition-colors"
             >
               <Plus size={18} />
-              添加密码
+              添加内容
             </button>
           </div>
         ) : filteredEntries.length === 0 ? (
           /* 无搜索结果 */
           <div className="flex flex-col items-center justify-center py-16 sm:py-24 text-center">
-            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-vault-card border border-vault-border flex items-center justify-center mb-3 sm:mb-4">
-              <ShieldX size={24} className="text-vault-muted sm:hidden" />
-              <ShieldX size={28} className="text-vault-muted hidden sm:block" />
+            <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gray-100 border border-gray-200 flex items-center justify-center mb-3 sm:mb-4">
+              <FileX size={24} className="text-gray-400 sm:hidden" />
+              <FileX size={28} className="text-gray-400 hidden sm:block" />
             </div>
-            <h2 className="text-base sm:text-lg font-medium text-gray-200 mb-1">未找到匹配的密码</h2>
-            <p className="text-sm text-vault-muted">尝试调整搜索关键词或分类筛选</p>
+            <h2 className="text-base sm:text-lg font-medium text-gray-700 mb-1">未找到匹配的内容</h2>
+            <p className="text-sm text-gray-500">尝试调整搜索关键词或分类筛选</p>
           </div>
         ) : (
-          /* 密码列表 */
+          /* 列表 */
           <>
-            <div className="mb-3 sm:mb-4 text-xs text-vault-muted font-mono">
-              共 {filteredEntries.length} 条密码
+            <div className="mb-3 sm:mb-4 text-xs text-gray-400 font-mono">
+              共 {filteredEntries.length} 条
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
               {filteredEntries.map(entry => (
-                <PasswordCard
+                <EntryCard
                   key={entry.id}
                   entry={entry}
                   onClick={() => setDetailEntry(entry)}
@@ -149,7 +146,7 @@ export default function Vault() {
 
       {/* 表单弹窗 */}
       {showForm && (
-        <PasswordForm
+        <EntryForm
           entry={editingEntry}
           onClose={() => { setShowForm(false); setEditingEntry(null); }}
         />
@@ -157,7 +154,7 @@ export default function Vault() {
 
       {/* 详情抽屉 */}
       {detailEntry && (
-        <PasswordDetail
+        <EntryDetail
           entry={detailEntry}
           onClose={() => setDetailEntry(null)}
           onEdit={() => handleEdit(detailEntry)}
