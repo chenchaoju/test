@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import type { PasswordEntry } from '@/lib/types';
 import { useVaultStore } from '@/store/vaultStore';
 import { checkStrength, generatePassword, defaultGeneratorOptions } from '@/lib/passwordGenerator';
-import { X, Eye, EyeOff, RefreshCw, Plus } from 'lucide-react';
+import { X, Eye, EyeOff, RefreshCw, Plus, Tag } from 'lucide-react';
 
 interface PasswordFormProps {
   entry?: PasswordEntry | null;
@@ -24,6 +24,7 @@ export default function PasswordForm({ entry, onClose }: PasswordFormProps) {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [newCategory, setNewCategory] = useState('');
 
   // 获取已有分类
   const existingCategories = Array.from(new Set(entries.map(e => e.category).filter(Boolean)));
@@ -180,19 +181,57 @@ export default function PasswordForm({ entry, onClose }: PasswordFormProps) {
             <label className="block text-xs font-mono text-vault-muted uppercase tracking-wider mb-1.5">
               分类
             </label>
-            <input
-              type="text"
-              value={form.category}
-              onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-              placeholder="如：社交、工作、金融"
-              className="vault-input"
-              list="category-list"
-            />
-            <datalist id="category-list">
+            {/* 已有分类标签 */}
+            <div className="flex flex-wrap gap-1.5 mb-2">
               {existingCategories.map(cat => (
-                <option key={cat} value={cat} />
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setForm(f => ({ ...f, category: cat }))}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                    form.category === cat
+                      ? 'bg-vault-accent/15 text-vault-accent border border-vault-accent/30'
+                      : 'bg-vault-card/50 text-gray-400 border border-vault-border hover:border-vault-accent/20'
+                  }`}
+                >
+                  <Tag size={11} className="inline mr-1" />
+                  {cat}
+                </button>
               ))}
-            </datalist>
+              <button
+                type="button"
+                onClick={() => setForm(f => ({ ...f, category: '' }))}
+                className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all ${
+                  !form.category
+                    ? 'bg-vault-accent/15 text-vault-accent border border-vault-accent/30'
+                    : 'bg-vault-card/50 text-gray-400 border border-vault-border hover:border-vault-accent/20'
+                }`}
+              >
+                无分类
+              </button>
+            </div>
+            {/* 新分类输入 */}
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newCategory}
+                onChange={e => setNewCategory(e.target.value)}
+                placeholder="新建分类..."
+                className="vault-input flex-1 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newCategory.trim()) {
+                    setForm(f => ({ ...f, category: newCategory.trim() }));
+                    setNewCategory('');
+                  }
+                }}
+                className="btn-secondary px-3 py-2 text-xs"
+              >
+                <Plus size={13} />
+              </button>
+            </div>
           </div>
 
           {/* 备注 */}

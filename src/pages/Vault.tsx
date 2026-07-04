@@ -36,12 +36,7 @@ export default function Vault() {
   }, [entries, searchQuery, selectedCategory]);
 
   // 分类列表
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(entries.map(e => e.category).filter(Boolean)));
-    return ['all', ...cats];
-  }, [entries]);
-
-  const categoryLabels: Record<string, string> = { all: '全部' };
+  const categories = useVaultStore(s => s.categories);
 
   const handleEdit = (entry: PasswordEntry) => {
     setDetailEntry(null);
@@ -68,6 +63,16 @@ export default function Vault() {
 
           {/* 分类筛选 - 桌面端横向按钮，移动端横向滚动 */}
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
+            <button
+              onClick={() => setSelectedCategory('all')}
+              className={`flex-shrink-0 px-2.5 sm:px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
+                selectedCategory === 'all'
+                  ? 'bg-vault-accent/10 text-vault-accent border border-vault-accent/30'
+                  : 'text-gray-400 hover:text-white border border-transparent hover:bg-vault-card/50'
+              }`}
+            >
+              全部
+            </button>
             {categories.map(cat => (
               <button
                 key={cat}
@@ -78,7 +83,7 @@ export default function Vault() {
                     : 'text-gray-400 hover:text-white border border-transparent hover:bg-vault-card/50'
                 }`}
               >
-                {categoryLabels[cat] || cat}
+                {cat}
               </button>
             ))}
           </div>

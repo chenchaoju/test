@@ -28,6 +28,7 @@ interface VaultStore {
   settings: AppSettings;
   selectedCategory: string;
   searchQuery: string;
+  categories: string[];
 
   // 操作
   initStore: () => void;
@@ -48,6 +49,9 @@ interface VaultStore {
   clearVault: () => void;
   exportData: () => string;
   importData: (jsonStr: string) => { account: string; success: boolean };
+  addCategory: (cat: string) => void;
+  deleteCategory: (cat: string) => void;
+  renameCategory: (oldCat: string, newCat: string) => void;
 }
 
 const defaultSettings: AppSettings = {
@@ -60,6 +64,10 @@ function getSettings(account: string): AppSettings {
   return saved ? { ...defaultSettings, ...saved } : defaultSettings;
 }
 
+function extractCategories(entries: PasswordEntry[]): string[] {
+  return Array.from(new Set(entries.map(e => e.category).filter(Boolean)));
+}
+
 export const useVaultStore = create<VaultStore>((set, get) => ({
   entries: [],
   isLocked: true,
@@ -70,6 +78,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
   settings: defaultSettings,
   selectedCategory: 'all',
   searchQuery: '',
+  categories: [],
 
   initStore: () => {
     const accounts = getAccounts();
@@ -87,6 +96,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     if (!verifyAccountPassword(account, password)) return false;
     const entries = loadAccountEntries<PasswordEntry[]>(account, password) || [];
     const settings = getSettings(account);
+    const categories = extractCategories(entries);
     if (remember) {
       saveSession(account, password, true);
     }
@@ -96,6 +106,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       masterPassword: password,
       entries,
       settings,
+      categories,
     });
     return true;
   },
@@ -105,12 +116,14 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     if (!session || session.account !== account) return false;
     const entries = loadAccountEntries<PasswordEntry[]>(account, session.password) || [];
     const settings = getSettings(account);
+    const categories = extractCategories(entries);
     set({
       isLocked: false,
       currentAccount: account,
       masterPassword: session.password,
       entries,
       settings,
+      categories,
     });
     return true;
   },
@@ -127,6 +140,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       selectedCategory: 'all',
       searchQuery: '',
       settings: defaultSettings,
+      categories: [],
     });
   },
 
@@ -143,6 +157,7 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       selectedCategory: 'all',
       searchQuery: '',
       settings: defaultSettings,
+      categories: [],
     });
   },
 
@@ -163,8 +178,9 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
       updatedAt: now,
     };
     const entries = [...get().entries, newEntry];
+    const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
-    set({ entries });
+    set({ entries, categories });
     get().addToast('success', '密码已添加');
   },
 
@@ -173,16 +189,18 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
     const entries = get().entries.map(e =>
       e.id === id ? { ...e, ...partial, updatedAt: Date.now() } : e
     );
+    const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
-    set({ entries });
+    set({ entries, categories });
     get().addToast('success', '密码已更新');
   },
 
   deleteEntry: (id) => {
     const { currentAccount, masterPassword } = get();
     const entries = get().entries.filter(e => e.id !== id);
+    const categories = extractCategories(entries);
     saveAccountEntries(currentAccount, entries, masterPassword);
-    set({ entries });
+    set({ entries, categories });
     get().addToast('success', '密码已删除');
   },
 
@@ -230,5 +248,46 @@ export const useVaultStore = create<VaultStore>((set, get) => ({
 
   importData: (jsonStr: string) => {
     return importAccountData(jsonStr);
+  },
+
+  addCategory: (cat: string) => {
+    const trimmed = cat.trim();
+    if (!trimmed) return;
+    const { categories } = get();
+    if (categories.includes(trimmed)) {
+      get().addToast('info', '分类已存在');
+      return;
+    }
+    set({ categories: [...categories, trimmed] });
+    get().addToast('success', '分类已添加');
+  },
+
+  deleteCategory: (cat: string) => {
+    const { currentAccount, masterPassword, entries } = get();
+    // 将该分类下的密码改为空分类
+    const newEntries = entries.map(e =>
+      e.category === cat ? { ...e, category: '', updatedAt: Date.now() } : e
+    );
+    const categories = extractCategories(newEntries);
+    saveAccountEntries(currentAccount, newEntries, masterPassword);
+    set({ entries: newEntries, categories, selectedCategory: 'all' });
+    get().addToast('success', '分类已删除');
+  },
+
+  renameCategory: (oldCat: string, newCat: string) => {
+    const trimmed = newCat.trim();
+    if (!trimmed || oldCat === trimmed) return;
+    const { currentAccount, masterPassword, entries, categories } = get();
+    if (categories.includes(trimmed)) {
+      get().addToast('error', '新分类名称已存在');
+      return;
+    }
+    const newEntries = entries.map(e =>
+      e.category === oldCat ? { ...e, category: trimmed, updatedAt: Date.now() } : e
+    );
+    const newCategories = extractCategories(newEntries);
+    saveAccountEntries(currentAccount, newEntries, masterPassword);
+    set({ entries: newEntries, categories: newCategories, selectedCategory: trimmed });
+    get().addToast('success', '分类已重命名');
   },
 }));
